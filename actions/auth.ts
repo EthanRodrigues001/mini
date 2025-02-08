@@ -20,7 +20,18 @@ export const getUserDetails = async (userId: string) => {
 export const getUser = async (email: string) => {
   try {
     const user = await db.select().from(users).where(eq(users.email, email));
-    return user[0] || null;
+    return {
+      id: user[0].id,
+      email: user[0].email,
+      name: user[0].name,
+      role: user[0].role,
+      rollNo: user[0].rollNo ?? undefined,
+      department: user[0].department ?? undefined,
+      semester: user[0].semester ?? undefined,
+      phoneNo: user[0].phoneNo ?? undefined,
+      collegeEmail: user[0].collegeEmail ?? undefined,
+      club: user[0].club ?? undefined,
+    };
   } catch (error) {
     console.log(error);
   }
@@ -31,6 +42,10 @@ export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
+  if (!password || password.length < 8 || password.length > 265) {
+    return { error: "Password must be between 8 and 265 characters long." };
+  }
+
   try {
     const { account } = await createAdminClient();
 
@@ -39,6 +54,10 @@ export async function signUp(formData: FormData) {
       .select()
       .from(users)
       .where(eq(users.email, email));
+
+    if (await account.getSession(email)) {
+      return { error: "An account with this email already exists." };
+    }
 
     if (existingUser.length > 0) {
       return { error: "An account with this email already exists." };
@@ -156,7 +175,11 @@ export async function signIn_google() {
 
 export async function getLoggedInUser() {
   const sessionClient = await createSessionClient();
-  if (!sessionClient) return null;
+  // console.log("Session client:", sessionClient);
+  if (!sessionClient) {
+    // console.error("No session client found. User is not logged in.");
+    return null;
+  }
   const { account } = sessionClient;
 
   try {
@@ -174,7 +197,15 @@ export async function getLoggedInUser() {
         .returning();
 
       if (!newUser[0]) throw new Error("Failed to create user document");
-      user = newUser[0];
+      user = {
+        ...newUser[0],
+        rollNo: newUser[0].rollNo ?? undefined,
+        department: newUser[0].department ?? undefined,
+        semester: newUser[0].semester ?? undefined,
+        phoneNo: newUser[0].phoneNo ?? undefined,
+        collegeEmail: newUser[0].collegeEmail ?? undefined,
+        club: newUser[0].club ?? undefined,
+      };
     }
     return user;
   } catch (error) {

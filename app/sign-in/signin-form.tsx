@@ -15,31 +15,36 @@ import { toast } from "sonner";
 export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  //   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { refreshUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
 
     const formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
 
     const result = await signIn(formData);
+    setLoading(false);
 
     if (result.error) {
       toast.error(result.error);
-    } else if (result.success) {
-      refreshUser();
-      router.push(`/`);
+    } else {
+      await refreshUser();
+      router.push("/dashboard");
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      setLoading(true);
       const redirectUrl = await signIn_google();
       refreshUser();
+
+      setLoading(false);
       window.location.href = redirectUrl;
     } catch {
       toast.error("Failed to initiate Google sign-in");
@@ -96,7 +101,7 @@ export default function SignInForm() {
               />
             </div>
             <Button type="submit" className="w-full">
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </div>
           <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">

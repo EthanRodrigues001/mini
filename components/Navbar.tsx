@@ -23,17 +23,16 @@ import {
 } from "@/components/ui/sheet";
 import { ModeToggle } from "./Theme-Toggle";
 import { useUser } from "@/contexts/UserContext";
-import { signOut } from "@/actions/auth";
+// import { signOut } from "@/actions/auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleSheet = () => setIsOpen(!isOpen);
-  const { user, setUserNull } = useUser();
+  const { user, logoutUser } = useUser();
 
   const handleSignOut = async () => {
-    await signOut();
-    setUserNull();
+    await logoutUser();
   };
 
   const NavLinks = () => (

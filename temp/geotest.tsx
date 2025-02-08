@@ -10,7 +10,7 @@ interface UserLocation {
 
 const Map = ({ userLocation }: { userLocation: UserLocation | null }) => {
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: "AIzaSyC5xlyNAz23Mi0PnEnwO8eqMeNovrxnqms", // Replace with your actual API key
+    googleMapsApiKey: "", // Replace with your actual API key
   });
 
   if (!isLoaded) return <div>Loading...</div>;

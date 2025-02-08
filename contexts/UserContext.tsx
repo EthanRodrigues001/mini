@@ -1,8 +1,14 @@
 "use client";
 
-import type React from "react";
-import { createContext, useContext, useState, useEffect } from "react";
-import { getLoggedInUser } from "@/actions/auth";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import useSWR from "swr";
+import { getLoggedInUser, signOut } from "@/actions/auth";
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -21,95 +27,67 @@ type User = {
   semester?: number;
   phoneNo?: string;
   collegeEmail?: string;
-  club?:
-    | "NSS"
-    | "GDSC"
-    | "Algozenith"
-    | "AI/DL"
-    | "CSI-COMP"
-    | "CSI-IT"
-    | "IEEE"
-    | "FCRIT Council"
-    | "ECELL"
-    | "Manthan"
-    | "AGNEL CYBER CELL"
-    | "ECO CLUB"
-    | "DEBATE CLUB"
-    | "RHYTHM Club"
-    | "Agnel Robotics Club"
-    | "The drama house fcrit"
-    | "Nritya Nation";
+  club?: string;
 };
 
 type UserContextType = {
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   loading: boolean;
-  refreshUser: () => Promise<void>;
-  setUserNull: () => void;
+  refreshUser: () => void;
+  logoutUser: () => void;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [localUser, setLocalUser] = useState<User | null>(null);
 
-  // Function to fetch and update user data
   const fetchUser = async () => {
-    setLoading(true);
-    try {
-      const userData = await getLoggedInUser();
-      if (
-        userData &&
-        (!userData.role || !userData.phoneNo || !userData.collegeEmail)
-      ) {
-        router.push("/getting-started");
-      }
-
-      if (userData) {
-        const sanitizedUser: User = {
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          role: userData.role,
-          rollNo: userData.rollNo ?? undefined,
-          department: userData.department ?? undefined,
-          semester: userData.semester ?? undefined,
-          phoneNo: userData.phoneNo ?? undefined,
-          collegeEmail: userData.collegeEmail ?? undefined,
-          club: userData.club ?? undefined,
-        };
-
-        setUser(sanitizedUser);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    const userData = await getLoggedInUser();
+    setLocalUser(userData);
+    return userData;
   };
 
-  // Function to manually refresh user data
-  const refreshUser = async () => {
-    await fetchUser();
-  };
+  const {
+    data: user,
+    mutate,
+    isLoading,
+  } = useSWR<User | null>("user", fetchUser, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 1000 * 60 * 60 * 24,
+  });
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (user !== undefined) {
+      setLocalUser(user);
+    }
+  }, [user]);
 
-  const setUserNull = () => {
-    setUser(null);
+  // Function to manually refresh user data
+
+  const refreshUser = useCallback(async () => {
+    await mutate();
+  }, [mutate]);
+
+  // Function to log out user
+  const logoutUser = async () => {
+    setLocalUser(null);
+    await signOut();
+
+    await mutate(null);
+    router.push("/sign-in");
   };
 
   return (
     <UserContext.Provider
-      value={{ user, setUser, loading, refreshUser, setUserNull }}
+      value={{
+        user: localUser,
+        loading: isLoading,
+        refreshUser,
+        logoutUser,
+      }}
     >
       {children}
     </UserContext.Provider>
