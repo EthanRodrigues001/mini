@@ -90,7 +90,7 @@ export const events = pgTable("events", {
   description: text("description"),
   status: eventStatusEnum("status").default("pending"),
   logo: text("logo"),
-  bannerImage: text("banner_images"),
+  bannerImage: text("bannerImage"),
   organizerId: uuid("organizer_id").references(() => users.id),
   participantRegistration: boolean("participant_registration").default(true),
   category: eventCategoryEnum("category").notNull(), // Now an Enum
@@ -121,4 +121,5 @@ export const eventRegistrations = pgTable("event_registrations", {
   userId: uuid("user_id").references(() => users.id),
   registeredAt: timestamp("registered_at").defaultNow(),
   paymentStatus: boolean("payment_status"),
+  txnId: text("txnid").default(""),
 });

@@ -1,26 +1,10 @@
 "use client";
-
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useUser } from "@/contexts/UserContext";
+import { useRouter } from "next/navigation";
+import { Calendar } from "lucide-react";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
+import Profile04 from "@/components/Profile04";
 import {
   Select,
   SelectContent,
@@ -28,386 +12,92 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { eventCategoryEnum, eventModeEnum } from "@/db/schema";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, ImageIcon, Loader2, Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useState } from "react";
-import { useUser } from "@/contexts/UserContext";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-
-// Form Schema
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.enum(eventCategoryEnum.enumValues),
-  mode: z.enum(eventModeEnum.enumValues),
-  participantRegistration: z.boolean(),
-  isPaid: z.boolean(),
-  price: z.string().optional(),
-  website: z.string().url().optional(),
-  dateOfEvent: z.string(),
-  logo: z.string().optional(),
-  bannerImage: z.string().optional(),
-});
+import { useEvents } from "@/contexts/EventContext";
+import { List03 } from "@/components/List03";
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { events, loading, error } = useEvents();
+  const [filter, setFilter] = useState("all");
 
-  // Mock events data - replace with actual API call
-  const events = [
-    {
-      id: "1",
-      name: "Tech Workshop 2024",
-      description: "A workshop on latest technologies",
-      status: "pending",
-      category: "technical",
-      dateOfEvent: "2024-03-15",
-      createdAt: new Date().toISOString(),
-    },
-    // Add more mock events
-  ];
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      participantRegistration: true,
-      isPaid: false,
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      setIsSubmitting(true);
-      // Add your event creation logic here
-      console.log(values);
-
-      toast.success("Event Created");
-
-      setOpen(false);
-      form.reset();
-    } catch {
-      toast.warning("Something went wrong");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const filteredEvents =
+    filter === "all"
+      ? events
+      : events.filter((event) => event.category === filter);
 
   if (!user) return null;
-  if (user.role == "student") return router.push(`/`);
+  if (user.role === "student") {
+    router.push(`/`);
+    return null;
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your events and submissions
-          </p>
+    <div className="flex min-h-[calc(100vh-64px)]">
+      <div className="w-[70%] overflow-hidden p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage your events and submissions
+            </p>
+          </div>
+          <div className="flex items-center mt-4 md:mt-0">
+            <Select onValueChange={setFilter} defaultValue={filter}>
+              <SelectTrigger className="w-[180px] mr-4">
+                <SelectValue placeholder="Filter events" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="technical">Technical</SelectItem>
+                <SelectItem value="cultural">Cultural</SelectItem>
+                <SelectItem value="sports">Sports</SelectItem>
+                <SelectItem value="workshop">Workshop</SelectItem>
+                <SelectItem value="seminar">Seminar</SelectItem>
+              </SelectContent>
+            </Select>
+            <CreateEventDialog />
+          </div>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Event
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Event</DialogTitle>
-              <DialogDescription>
-                Fill in the details for your new event. It will be submitted for
-                approval.
-              </DialogDescription>
-            </DialogHeader>
-
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Event Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter event name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe your event"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {eventCategoryEnum.enumValues.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category.charAt(0).toUpperCase() +
-                                  category.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="mode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mode</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select mode" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {eventModeEnum.enumValues.map((mode) => (
-                              <SelectItem key={mode} value={mode}>
-                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="dateOfEvent"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Event</FormLabel>
-                      <FormControl>
-                        <div className="flex">
-                          <Input type="date" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="participantRegistration"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Allow Registration
-                          </FormLabel>
-                          <FormDescription>
-                            Enable participant registration
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isPaid"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Paid Event
-                          </FormLabel>
-                          <FormDescription>
-                            Is this a paid event?
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {form.watch("isPaid") && (
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price (₹)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Enter price"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="url"
-                          placeholder="https://..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="logo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Logo</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bannerImage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Banner Image</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Create Event
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <div className="overflow-y-auto h-[calc(100vh-200px)]">
+          {loading ? (
+            <p>Loading events...</p>
+          ) : error ? (
+            <p>Error: {error}</p>
+          ) : (
+            <List03
+              items={filteredEvents.map((event) => ({
+                id: event.id,
+                title: event.name,
+                subtitle: event.description || "",
+                icon: Calendar,
+                iconStyle: "savings",
+                date: event.dateOfEvent || "",
+                amount: event.isPaid ? event.price || "" : "Free",
+                status: event.status,
+                category: event.category,
+              }))}
+            />
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-6">
-        {events.map((event) => (
-          <Card key={event.id} className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-4 mb-2">
-                  <h3 className="text-xl font-semibold">{event.name}</h3>
-                  <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                    {event.status}
-                  </span>
-                </div>
-                <p className="text-muted-foreground mb-4">
-                  {event.description}
-                </p>
-                <div className="flex gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    {new Date(event.dateOfEvent).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    {event.category}
-                  </div>
-                </div>
-              </div>
-              <Button variant="outline">Edit</Button>
-            </div>
-          </Card>
-        ))}
+      <div className="w-[30%] fixed right-0 top-16 h-[calc(100vh-64px)] overflow-y-auto border-l border-zinc-200 dark:border-zinc-800 bg-background">
+        <div className="p-6">
+          <Profile04
+            name={user.name}
+            role={user.role}
+            email={user.email}
+            avatar={`https://api.dicebear.com/9.x/glass/svg?seed=${user.name}`}
+            club={user.club || ""}
+            collegeEmail={user.collegeEmail || ""}
+            department={user.department || ""}
+            phoneNo={user.phoneNo || ""}
+            rollNo={user.rollNo || ""}
+            semester={user.semester || 0}
+          />
+        </div>
       </div>
     </div>
   );

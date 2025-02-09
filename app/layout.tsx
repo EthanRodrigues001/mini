@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/contexts/UserContext";
+import { EventProvider } from "@/contexts/EventContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
+import { ApprovedEventsProvider } from "@/contexts/ApprovedEventsContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,10 +40,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <UserProvider>
-            <header className="sticky top-0 z-50">
-              <Navbar />
-            </header>
-            {children}
+            <ApprovedEventsProvider>
+              <EventProvider>
+                <header className="sticky top-0 z-50">
+                  <Navbar />
+                </header>
+                {children}
+              </EventProvider>
+            </ApprovedEventsProvider>
           </UserProvider>
           <Toaster />
         </ThemeProvider>

@@ -45,6 +45,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     const userData = await getLoggedInUser();
+    console.log(userData)
     setLocalUser(userData);
     return userData;
   };

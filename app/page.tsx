@@ -91,7 +91,7 @@ export default function Home() {
               <Card key={i} className="group overflow-hidden">
                 <div className="aspect-video relative">
                   <img
-                    src={`https://source.unsplash.com/random/800x600?tech,event&${i}`}
+                    src={`https://images.unsplash.com/photo-1504384308090-c894fdcc538d`}
                     alt="Event cover"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
