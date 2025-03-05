@@ -99,6 +99,7 @@ export const events = pgTable("events", {
   website: text("website"),
   isPaid: boolean("is_paid").default(false),
   price: decimal("price", { precision: 10, scale: 2 }).default("0"),
+  qrImage: text("qr_image"),
   dateOfEvent: text("date_of_event"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -122,4 +123,13 @@ export const eventRegistrations = pgTable("event_registrations", {
   registeredAt: timestamp("registered_at").defaultNow(),
   paymentStatus: boolean("payment_status"),
   txnId: text("txnid").default(""),
+});
+
+
+// Event Likes Table
+export const eventLikes = pgTable("event_likes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").references(() => events.id),
+  userId: uuid("user_id").references(() => users.id),
+  likedAt: timestamp("liked_at").defaultNow(),
 });

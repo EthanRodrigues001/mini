@@ -23,7 +23,6 @@ export default function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,265}$/; // ✅ Requires letters and numbers
 
     if (!passwordRegex.test(password)) {

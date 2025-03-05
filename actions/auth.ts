@@ -4,9 +4,10 @@ import { ID, OAuthProvider } from "node-appwrite";
 import { createAdminClient, createSessionClient } from "@/lib/server/appwrite";
 import { cookies, headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { users } from "@/db/schema";
+import { users,moderators } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { hash } from "bcryptjs"
 
 export const getUserDetails = async (userId: string) => {
   try {
@@ -284,3 +285,46 @@ export async function updateUserProfile(
     };
   }
 }
+
+export async function adminLogin(pin: string) {
+  // In a real-world scenario, you'd want to store this securely, not hardcode it
+  const ADMIN_PIN = "1234"
+
+  if (pin === ADMIN_PIN) {
+    // Here you'd typically create a session or JWT for the admin
+    return { success: true }
+  } else {
+    return { success: false, error: "Invalid admin PIN" }
+  }
+}
+
+export async function moderatorLogin(pin: string) {
+  const moderator = await db
+    .select()
+    .from(moderators)
+    .where(eq(moderators.pin, await hash(pin, 10)))
+
+  if (moderator) {
+    // Here you'd typically create a session or JWT for the moderator
+    return { success: true, moderator }
+  } else {
+    return { success: false, error: "Invalid moderator PIN" }
+  }
+}
+
+export async function createModerator(name: string, email: string, pin: string) {
+  const hashedPin = await hash(pin, 10)
+
+  const newModerator = await db
+    .insert(moderators)
+    .values({
+      name,
+      email,
+      pin: hashedPin,
+    })
+    .returning()
+
+  return newModerator[0]
+}
+
+

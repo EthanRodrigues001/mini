@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signIn_google } from "@/actions/auth";
@@ -11,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { GalleryVerticalEnd } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import Link from "next/link";
+import { AdminModPortal } from "@/components/AdminModPortal";
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
@@ -52,7 +56,7 @@ export default function SignInForm() {
   };
 
   return (
-    <div className={cn("flex flex-col gap-6")}>
+    <div className={cn("flex flex-col gap-6 relative")}>
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
@@ -63,14 +67,14 @@ export default function SignInForm() {
               <div className="flex h-8 w-8 items-center justify-center rounded-md">
                 <GalleryVerticalEnd className="size-6" />
               </div>
-              <span className="sr-only">Acme Inc.</span>
+              <span className="sr-only">Event Mate</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+            <h1 className="text-xl font-bold">Welcome to Event Mate.</h1>
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
-              <a href="#" className="underline underline-offset-4">
+              <Link href="/sign-up" className="underline underline-offset-4">
                 Sign up
-              </a>
+              </Link>
             </div>
           </div>
           <div className="flex flex-col gap-6">

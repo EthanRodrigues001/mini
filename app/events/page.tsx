@@ -8,6 +8,8 @@ import { Calendar, Filter, MapPin, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useApprovedEvents } from "@/contexts/ApprovedEventsContext";
+import {parseAsString, useQueryState} from "nuqs"
+
 
 const categories = [
   "All",
@@ -19,7 +21,7 @@ const categories = [
 ];
 
 export default function EventsPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useQueryState("All",parseAsString.withDefault("All"));
   const { approvedEvents, loading } = useApprovedEvents();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -27,7 +29,7 @@ export default function EventsPage() {
     .filter(
       (event) =>
         selectedCategory === "All" ||
-        event.category.toLowerCase() === selectedCategory.toLowerCase()
+        event.category.toLowerCase() === (selectedCategory ?? "All").toLowerCase()
     )
     .filter((event) =>
       event.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -56,10 +58,6 @@ export default function EventsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" className="shrink-0">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
           </div>
         </div>
 

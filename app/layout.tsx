@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
 import { ApprovedEventsProvider } from "@/contexts/ApprovedEventsContext";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,10 +43,10 @@ export default function RootLayout({
           <UserProvider>
             <ApprovedEventsProvider>
               <EventProvider>
-                <header className="sticky top-0 z-50">
+                {/* <header className="sticky top-0 z-50">
                   <Navbar />
-                </header>
-                {children}
+                </header> */}
+                <NuqsAdapter>{children}</NuqsAdapter>
               </EventProvider>
             </ApprovedEventsProvider>
           </UserProvider>
