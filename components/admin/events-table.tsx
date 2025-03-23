@@ -34,20 +34,15 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  getAllEvents,
+  deleteEvent,
+  toggleEventFeatured,
+} from "@/actions/admin";
+import { format } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
-type Event = {
-  id: string;
-  name: string;
-  description: string;
-  status: "pending" | "approved" | "cancelled";
-  category: string;
-  mode: "online" | "offline";
-  dateOfEvent: string;
-  organizerId: string;
-  isPaid: boolean;
-  price: string;
-  featured: boolean;
-};
+import { Event } from "@/types/index";
 
 export function EventsTable() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -56,53 +51,35 @@ export function EventsTable() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const result = await getAllEvents();
+      if (result.success && result.events) {
+        setEvents(result.events);
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to fetch events",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while fetching events",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Mock data for now - would be replaced with actual API call
-    const mockEvents: Event[] = [
-      {
-        id: "1",
-        name: "Tech Conference 2023",
-        description: "Annual technology conference",
-        status: "approved",
-        category: "technical",
-        mode: "offline",
-        dateOfEvent: "2023-12-15",
-        organizerId: "org1",
-        isPaid: true,
-        price: "500",
-        featured: true,
-      },
-      {
-        id: "2",
-        name: "Cultural Fest",
-        description: "Annual cultural festival",
-        status: "pending",
-        category: "cultural",
-        mode: "offline",
-        dateOfEvent: "2023-11-20",
-        organizerId: "org2",
-        isPaid: false,
-        price: "0",
-        featured: false,
-      },
-      {
-        id: "3",
-        name: "Coding Workshop",
-        description: "Learn to code in Python",
-        status: "cancelled",
-        category: "workshop",
-        mode: "online",
-        dateOfEvent: "2023-10-05",
-        organizerId: "org1",
-        isPaid: true,
-        price: "200",
-        featured: false,
-      },
-    ];
-
-    setEvents(mockEvents);
-    setLoading(false);
+    fetchEvents();
   }, []);
 
   const handleView = (event: Event) => {
@@ -118,6 +95,67 @@ export function EventsTable() {
   const handleDelete = (event: Event) => {
     setSelectedEvent(event);
     setIsDeleteOpen(true);
+  };
+
+  const handleToggleFeatured = async (event: Event) => {
+    try {
+      const result = await toggleEventFeatured(event.id);
+      if (result.success) {
+        await fetchEvents();
+        toast({
+          title: "Success",
+          description: `Event ${
+            event.featured ? "unfeatured" : "featured"
+          } successfully`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to update event featured status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling event featured status:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      setActionLoading(true);
+      const result = await deleteEvent(selectedEvent.id);
+
+      if (result.success) {
+        await fetchEvents();
+        setIsDeleteOpen(false);
+        toast({
+          title: "Success",
+          description: "Event deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to delete event",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while deleting the event",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -176,17 +214,28 @@ export function EventsTable() {
                     <Badge variant="secondary">{event.category}</Badge>
                   </TableCell>
                   <TableCell>{getStatusBadge(event.status)}</TableCell>
-                  <TableCell>{event.mode}</TableCell>
-                  <TableCell>{event.dateOfEvent}</TableCell>
+                  <TableCell>{event.mode || "N/A"}</TableCell>
+                  <TableCell>{event.dateOfEvent || "N/A"}</TableCell>
                   <TableCell>
                     {event.isPaid ? `₹${event.price}` : "Free"}
                   </TableCell>
                   <TableCell>
-                    {event.featured ? (
-                      <Check className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <X className="h-5 w-5 text-red-500" />
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleToggleFeatured(event)}
+                      title={
+                        event.featured
+                          ? "Remove from featured"
+                          : "Add to featured"
+                      }
+                    >
+                      {event.featured ? (
+                        <Check className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-500" />
+                      )}
+                    </Button>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -246,11 +295,13 @@ export function EventsTable() {
                 </div>
                 <div>
                   <Label>Mode</Label>
-                  <div className="mt-1">{selectedEvent.mode}</div>
+                  <div className="mt-1">{selectedEvent.mode || "N/A"}</div>
                 </div>
                 <div>
                   <Label>Date</Label>
-                  <div className="mt-1">{selectedEvent.dateOfEvent}</div>
+                  <div className="mt-1">
+                    {selectedEvent.dateOfEvent || "N/A"}
+                  </div>
                 </div>
                 <div>
                   <Label>Price</Label>
@@ -264,9 +315,22 @@ export function EventsTable() {
                     {selectedEvent.featured ? "Yes" : "No"}
                   </div>
                 </div>
+                <div>
+                  <Label>Created At</Label>
+                  <div className="mt-1">
+                    {selectedEvent.createdAt
+                      ? format(
+                          new Date(selectedEvent.createdAt),
+                          "MMM dd, yyyy"
+                        )
+                      : "N/A"}
+                  </div>
+                </div>
                 <div className="col-span-2">
                   <Label>Description</Label>
-                  <div className="mt-1">{selectedEvent.description}</div>
+                  <div className="mt-1">
+                    {selectedEvent.description || "No description provided"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -309,9 +373,24 @@ export function EventsTable() {
               </p>
               <div className="flex justify-end gap-2">
                 <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
+                  <Button variant="outline" disabled={actionLoading}>
+                    Cancel
+                  </Button>
                 </DialogClose>
-                <Button variant="destructive">Delete</Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteConfirm}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </Button>
               </div>
             </div>
           )}

@@ -9,9 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Calendar, Menu } from "lucide-react";
 import { Card } from "@/components/ui/card";
-
 import { Button } from "@/components/ui/button";
-
 import { nanoid } from "nanoid";
 import Link from "next/link";
 import {
@@ -23,11 +21,9 @@ import {
 } from "@/components/ui/sheet";
 import { ModeToggle } from "./Theme-Toggle";
 import { useUser } from "@/contexts/UserContext";
-// import { signOut } from "@/actions/auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-
   const toggleSheet = () => setIsOpen(!isOpen);
   const { user, logoutUser } = useUser();
 
@@ -66,6 +62,31 @@ const Navbar = () => {
     </>
   );
 
+  // Determine dashboard link and text based on user role
+  const getDashboardLink = () => {
+    if (!user) return "/dashboard";
+
+    if (user.role === "organizer") {
+      return "/dashboard";
+    } else if (user.role === "student") {
+      return "/my-events";
+    } else {
+      return "/dashboard";
+    }
+  };
+
+  const getDashboardText = () => {
+    if (!user) return "Dashboard";
+
+    if (user.role === "organizer") {
+      return "Dashboard";
+    } else if (user.role === "student") {
+      return "My Events";
+    } else {
+      return "Dashboard";
+    }
+  };
+
   return (
     <Card className="container bg-background/80 backdrop-blur-sm py-3 px-4 border-0 flex items-center justify-between gap-6 rounded-none">
       <Calendar className="text-primary cursor-pointer" />
@@ -77,14 +98,13 @@ const Navbar = () => {
       <div className="flex items-center gap-2">
         {user ? (
           <>
-            <Link href="/dashboard">
+            <Link href={getDashboardLink()}>
               <Button variant="secondary" className="hidden md:block px-2">
-                Dashboard
+                {getDashboardText()}
               </Button>
             </Link>
 
             <Button className="hidden md:block px-2" onClick={handleSignOut}>
-              {" "}
               Logout
             </Button>
           </>
@@ -97,8 +117,7 @@ const Navbar = () => {
             </Link>
             <Link href="/sign-up">
               <Button className="hidden md:block ml-2 mr-2 px-2">
-                {" "}
-                Sign Up{" "}
+                Sign Up
               </Button>
             </Link>
           </>
@@ -120,23 +139,43 @@ const Navbar = () => {
                   <NavLinks />
                 </ul>
                 {user ? (
-                  <>
-                    <Button
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => {
-                        handleSignOut();
-                        toggleSheet();
-                      }}
-                    >
-                      Logout
-                    </Button>
-                    <Link href="/dashboard">
-                      <Button className="w-full" onClick={toggleSheet}>
-                        Dashboard
+                  user.role === "student" ? (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => {
+                          handleSignOut();
+                          toggleSheet();
+                        }}
+                      >
+                        Logout
                       </Button>
-                    </Link>
-                  </>
+                      <Link href="/my-events">
+                        <Button className="w-full" onClick={toggleSheet}>
+                          My Events
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => {
+                          handleSignOut();
+                          toggleSheet();
+                        }}
+                      >
+                        Logout
+                      </Button>
+                      <Link href="/dashboard">
+                        <Button className="w-full" onClick={toggleSheet}>
+                          Dashboard
+                        </Button>
+                      </Link>
+                    </>
+                  )
                 ) : (
                   <>
                     <Link href="/sign-in">

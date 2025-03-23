@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Filter, MapPin, Search } from "lucide-react";
+import { Calendar, MapPin, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useApprovedEvents } from "@/contexts/ApprovedEventsContext";
-import {parseAsString, useQueryState} from "nuqs"
-
+import { parseAsString, useQueryState } from "nuqs";
 
 const categories = [
   "All",
@@ -21,7 +20,10 @@ const categories = [
 ];
 
 export default function EventsPage() {
-  const [selectedCategory, setSelectedCategory] = useQueryState("All",parseAsString.withDefault("All"));
+  const [selectedCategory, setSelectedCategory] = useQueryState(
+    "All",
+    parseAsString.withDefault("All")
+  );
   const { approvedEvents, loading } = useApprovedEvents();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -29,7 +31,8 @@ export default function EventsPage() {
     .filter(
       (event) =>
         selectedCategory === "All" ||
-        event.category.toLowerCase() === (selectedCategory ?? "All").toLowerCase()
+        event.category.toLowerCase() ===
+          (selectedCategory ?? "All").toLowerCase()
     )
     .filter((event) =>
       event.name.toLowerCase().includes(searchQuery.toLowerCase())

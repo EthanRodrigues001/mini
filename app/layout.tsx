@@ -43,9 +43,9 @@ export default function RootLayout({
           <UserProvider>
             <ApprovedEventsProvider>
               <EventProvider>
-                {/* <header className="sticky top-0 z-50">
+                <header className="sticky top-0 z-50">
                   <Navbar />
-                </header> */}
+                </header>
                 <NuqsAdapter>{children}</NuqsAdapter>
               </EventProvider>
             </ApprovedEventsProvider>

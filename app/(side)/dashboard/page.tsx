@@ -89,7 +89,7 @@ export default function DashboardPage() {
             name={user.name}
             role={user.role}
             email={user.email}
-            avatar={`https://api.dicebear.com/9.x/glass/svg?seed=${user.name}`}
+            avatar={""}
             club={user.club || ""}
             collegeEmail={user.collegeEmail || ""}
             department={user.department || ""}
