@@ -39,13 +39,8 @@ const Navbar = () => {
       <li>
         <Link href="/events">Events</Link>
       </li>
-      <li>
-        <Link href="#pricing">Pricing</Link>
-      </li>
-      <li>
-        <Link href="#faqs">FAQs</Link>
-      </li>
-      <li>
+
+      {/* <li>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <span className="cursor-pointer">Pages</span>
@@ -58,7 +53,7 @@ const Navbar = () => {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </li>
+      </li> */}
     </>
   );
 

@@ -125,7 +125,6 @@ export const eventRegistrations = pgTable("event_registrations", {
   txnId: text("txnid").default(""),
 });
 
-
 // Event Likes Table
 export const eventLikes = pgTable("event_likes", {
   id: uuid("id").primaryKey().defaultRandom(),

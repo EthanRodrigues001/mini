@@ -35,7 +35,20 @@ export function CreateEventDialog() {
   const { user } = useUser();
   const { refreshEvents } = useEvents();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    category: (typeof eventCategoryEnum.enumValues)[number];
+    mode: (typeof eventModeEnum.enumValues)[number];
+    participantRegistration: boolean;
+    isPaid: boolean;
+    price: string;
+    qrImage: string;
+    website: string;
+    dateOfEvent: string;
+    logo?: string;
+    bannerImage?: string;
+  }>({
     name: "",
     description: "",
     category: eventCategoryEnum
@@ -45,10 +58,11 @@ export function CreateEventDialog() {
     participantRegistration: true,
     isPaid: false,
     price: "",
+    qrImage: "",
     website: "",
     dateOfEvent: "",
-    logo: undefined,
-    bannerImage: undefined,
+    logo: "",
+    bannerImage: "",
   });
 
   const handleChange = (
@@ -60,13 +74,6 @@ export function CreateEventDialog() {
 
   const handleSwitchChange = (name: string) => (checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    }
   };
 
   const validateForm = () => {
@@ -126,11 +133,12 @@ export function CreateEventDialog() {
           mode: eventModeEnum.enumValues[0],
           participantRegistration: true,
           isPaid: false,
+          qrImage: "",
           price: "",
           website: "",
           dateOfEvent: "",
-          logo: undefined,
-          bannerImage: undefined,
+          logo: "",
+          bannerImage: "",
         });
       } else {
         console.log(result.error);
@@ -316,6 +324,20 @@ export function CreateEventDialog() {
                 onChange={handleChange}
                 placeholder="Enter price"
               />
+
+              <label
+                htmlFor="QRCode"
+                className="block text-sm font-medium text-gray-700"
+              >
+                QR Code Image
+              </label>
+              <Input
+                type="url"
+                id="qrImage"
+                name="qrImage"
+                value={formData.qrImage}
+                onChange={handleChange}
+              />
             </div>
           )}
 
@@ -345,11 +367,11 @@ export function CreateEventDialog() {
                 Logo
               </label>
               <Input
-                type="file"
+                type="url"
                 id="logo"
                 name="logo"
-                accept="image/*"
-                onChange={handleFileChange}
+                value={formData.logo}
+                onChange={handleChange}
               />
             </div>
 
@@ -361,11 +383,11 @@ export function CreateEventDialog() {
                 Banner Image
               </label>
               <Input
-                type="file"
+                type="url"
                 id="bannerImage"
                 name="bannerImage"
-                accept="image/*"
-                onChange={handleFileChange}
+                value={formData.bannerImage}
+                onChange={handleChange}
               />
             </div>
           </div>

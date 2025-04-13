@@ -6,7 +6,11 @@ import {
   eventLikes,
   eventRegistrations,
 } from "@/db/schema";
-import { Event } from "@/types/index";
+import {
+  Event,
+  PaymentVerificationResponse,
+  EventRegistrationResponse,
+} from "@/types/index";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 // Get all approved events
@@ -33,6 +37,7 @@ export async function createEvent(eventData: Event) {
     .values({
       ...eventData,
       status: "pending",
+      price: eventData.price?.toString() || null,
     })
     .returning();
 
@@ -165,68 +170,6 @@ export async function getEventLikeCount(eventId: string) {
     };
   }
 }
-export async function registerForEvent(eventId: string, userId: string) {
-  try {
-    // Check if user is already registered
-    const existingRegistration = await db
-      .select()
-      .from(eventRegistrations)
-      .where(
-        and(
-          eq(eventRegistrations.eventId, eventId),
-          eq(eventRegistrations.userId, userId)
-        )
-      )
-      .limit(1);
-
-    if (existingRegistration.length > 0) {
-      return {
-        success: false,
-        error: "You are already registered for this event",
-      };
-    }
-
-    // Get event details to check if it's paid
-    const eventResult = await getEventById(eventId);
-    if (!eventResult.success) {
-      return eventResult;
-    }
-
-    const event = eventResult.event;
-
-    // Create registration
-    const registration = await db
-      .insert(eventRegistrations)
-      .values({
-        eventId,
-        userId,
-        paymentStatus: event && event.isPaid ? false : true, // If paid event, payment status is false initially
-      })
-      .returning();
-
-    // If it's a paid event, redirect to payment page
-    if (event && event.isPaid) {
-      return {
-        success: true,
-        registration: registration[0],
-        requiresPayment: true,
-      };
-    }
-
-    return {
-      success: true,
-      registration: registration[0],
-      requiresPayment: false,
-    };
-  } catch (error) {
-    console.error("Error registering for event:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to register for event",
-    };
-  }
-}
 
 // Process payment for an event
 export async function processEventPayment(
@@ -287,3 +230,110 @@ export async function getUserRegistrations(userId: string) {
     };
   }
 }
+
+// Register for an event
+export async function registerForEvent(
+  eventId: string,
+  userId: string,
+  isPaid: boolean,
+  txnId: string | null
+): Promise<EventRegistrationResponse> {
+  try {
+    // Check if user is already registered
+    const existingRegistration = await db
+      .select()
+      .from(eventRegistrations)
+      .where(
+        and(
+          eq(eventRegistrations.eventId, eventId),
+          eq(eventRegistrations.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existingRegistration.length) {
+      return {
+        success: false,
+        error: "You are already registered for this event",
+      };
+    }
+
+    // Create new registration
+    const newRegistration = await db
+      .insert(eventRegistrations)
+      .values({
+        eventId,
+        userId,
+        paymentStatus: isPaid ? true : false, // For paid events, payment is verified before registration
+        txnId: isPaid ? txnId : "",
+      })
+      .returning();
+
+    return {
+      success: true,
+      registration: newRegistration[0],
+    };
+  } catch (error) {
+    console.error("Error registering for event:", error);
+    return { success: false, error: "Failed to register for event" };
+  }
+}
+
+// Verify payment transaction ID
+export async function verifyPayment(
+  txnId: string
+): Promise<PaymentVerificationResponse> {
+  try {
+    // Check if transaction ID is already used
+    const existingPayment = await db
+      .select()
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.txnId, txnId))
+      .limit(1);
+
+    if (existingPayment.length > 0) {
+      return {
+        success: false,
+        isDuplicate: true,
+        error: "This transaction ID has already been used",
+      };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    return {
+      success: false,
+      error: "Failed to verify payment",
+    };
+  }
+}
+
+export const hasRegistered = async (
+  eventId: string,
+  userId: string
+): Promise<boolean> => {
+  try {
+    const registration = await db
+      .select()
+      .from(eventRegistrations)
+      .where(
+        and(
+          eq(eventRegistrations.eventId, eventId),
+          eq(eventRegistrations.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (registration.length > 0) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error checking if user has registered:", error);
+    return false;
+  }
+};

@@ -8,21 +8,25 @@ import type {
 } from "@/db/schema";
 
 // User Types
-export type User = {
+export type Role = (typeof roleEnum.enumValues)[number];
+export type Department = (typeof departmentEnum.enumValues)[number];
+export type Club = (typeof clubEnum.enumValues)[number];
+
+export interface User {
   id: string;
   email: string;
   name: string;
   password: string;
-  role: (typeof roleEnum.enumValues)[number];
-  rollNo?: string | null;
-  department?: (typeof departmentEnum.enumValues)[number] | null;
-  semester?: number | null;
-  phoneNo?: string | null;
-  collegeEmail?: string | null;
-  club?: (typeof clubEnum.enumValues)[number] | null;
+  role: Role;
+  rollNo?: string;
+  department?: Department;
+  semester?: number;
+  phoneNo?: string;
+  collegeEmail?: string;
+  club?: Club;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
 export type CreateUserInput = Omit<User, "id" | "createdAt" | "updatedAt">;
 export type UpdateUserInput = Partial<
@@ -30,38 +34,42 @@ export type UpdateUserInput = Partial<
 >;
 
 // Moderator Types
-export type Moderator = {
+export interface Moderator {
   id: string;
   pin: string;
   name: string;
   email: string;
   createdAt: Date;
-};
+}
 
 export type CreateModeratorInput = Omit<Moderator, "id" | "createdAt">;
 export type UpdateModeratorInput = Partial<Omit<Moderator, "id" | "createdAt">>;
 
 // Event Types
-export type Event = {
+export type EventStatus = (typeof eventStatusEnum.enumValues)[number];
+export type EventMode = (typeof eventModeEnum.enumValues)[number];
+export type EventCategory = (typeof eventCategoryEnum.enumValues)[number];
+
+export interface Event {
   id: string;
   name: string;
-  description: string | null;
-  status: (typeof eventStatusEnum.enumValues)[number];
-  logo: string | null;
-  bannerImage: string | null;
-  organizerId: string | null;
+  description?: string;
+  status: EventStatus;
+  logo?: string;
+  bannerImage?: string;
+  organizerId: string;
   participantRegistration: boolean;
-  category: (typeof eventCategoryEnum.enumValues)[number];
+  category: EventCategory;
   featured: boolean;
-  mode: (typeof eventModeEnum.enumValues)[number] | null;
-  website: string | null;
+  mode?: EventMode;
+  website?: string;
   isPaid: boolean;
-  price: string;
-  qrImage: string | null;
-  dateOfEvent: string | null;
+  price: number | string;
+  qrImage?: string;
+  dateOfEvent?: string;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
 export type CreateEventInput = Omit<
   Event,
@@ -83,14 +91,14 @@ export type EventApproval = {
 export type CreateEventApprovalInput = Omit<EventApproval, "id" | "approvedAt">;
 
 // Event Registration Types
-export type EventRegistration = {
+export interface EventRegistration {
   id: string;
-  eventId: string;
-  userId: string;
-  registeredAt: Date;
+  eventId: string | null;
+  userId: string | null;
+  registeredAt: Date | null;
   paymentStatus: boolean | null;
-  txnId: string;
-};
+  txnId: string | null;
+}
 
 // Event Like Types
 export type EventLike = {
@@ -106,3 +114,27 @@ export type EventWithApprovals = Event & {
   totalModerators: number;
   isApprovedByCurrentModerator: boolean;
 };
+
+// API Response Types
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  error?: string;
+  data?: T;
+}
+
+export interface EventResponse extends ApiResponse {
+  event?: Event;
+}
+
+export interface EventLikeResponse extends ApiResponse {
+  liked?: boolean;
+  count?: number;
+}
+
+export interface EventRegistrationResponse extends ApiResponse {
+  registration?: EventRegistration;
+}
+
+export interface PaymentVerificationResponse extends ApiResponse {
+  isDuplicate?: boolean;
+}

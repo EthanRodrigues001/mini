@@ -5,18 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Globe, Heart, MapPin, Share2, Loader2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   getEventById,
   checkEventLike,
   toggleEventLike,
   getEventLikeCount,
+  hasRegistered,
 } from "@/actions/events";
-import { Event } from "@/types/index";
+import type { Event } from "@/types/index";
 import { EventRegistrationDialog } from "@/components/event-registration-dialog";
 
 export default function EventPage() {
@@ -29,6 +30,8 @@ export default function EventPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
+  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -53,19 +56,15 @@ export default function EventPage() {
             setLikeCount(countResult.count ?? 0);
           }
         } else {
-          toast({
-            title: "Error",
+          toast("Error", {
             description: result.error || "Failed to load event",
-            variant: "destructive",
           });
           router.push("/events");
         }
       } catch (error) {
         console.error("Error fetching event:", error);
-        toast({
-          title: "Error",
+        toast("Error", {
           description: "An unexpected error occurred",
-          variant: "destructive",
         });
         router.push("/events");
       } finally {
@@ -74,14 +73,29 @@ export default function EventPage() {
     };
 
     fetchEvent();
+
+    // Check if user has registered for the event
+    const hasRegisteredForEvent = async () => {
+      try {
+        const result = await hasRegistered(params.id as string, user?.id || "");
+
+        if (result) {
+          setIsRegistered(true);
+        }
+      } catch (error) {
+        console.error("Error checking if user has registered:", error);
+        toast("Error", {
+          description: "An unexpected error occurred",
+        });
+      }
+    };
+    hasRegisteredForEvent();
   }, [params.id, user, router]);
 
   const handleLikeToggle = async () => {
     if (!user) {
-      toast({
-        title: "Authentication required",
+      toast("Authentication required", {
         description: "Please sign in to like events",
-        variant: "destructive",
       });
       router.push("/sign-in");
       return;
@@ -97,21 +111,35 @@ export default function EventPage() {
         setIsLiked(result.liked ?? false);
         setLikeCount((prev) => (result.liked ? prev + 1 : prev - 1));
       } else {
-        toast({
-          title: "Error",
+        toast("Error", {
           description: result.error || "Failed to update like status",
-          variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error toggling like:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "An unexpected error occurred",
-        variant: "destructive",
       });
     } finally {
       setLikeLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: event?.name || "Event",
+          text: `Check out this event: ${event?.name}`,
+          url: window.location.href,
+        })
+        .catch((error) => console.log("Error sharing", error));
+    } else {
+      // Fallback for browsers that don't support the Web Share API
+      navigator.clipboard.writeText(window.location.href);
+      toast("Copied", {
+        description: "Event link copied to clipboard",
+      });
     }
   };
 
@@ -149,6 +177,7 @@ export default function EventPage() {
           src={
             event.bannerImage ||
             "https://images.unsplash.com/photo-1504384308090-c894fdcc538d" ||
+            "/placeholder.svg" ||
             "/placeholder.svg"
           }
           alt={`${event.name} cover`}
@@ -172,7 +201,7 @@ export default function EventPage() {
                     <div>
                       <h1 className="text-2xl font-bold">{event.name}</h1>
                       <p className="text-muted-foreground">
-                        {event.organizerId}
+                        Organized by {event.organizerId}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -193,7 +222,12 @@ export default function EventPage() {
                           />
                         )}
                       </Button>
-                      <Button size="icon" variant="ghost" title="Share">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Share"
+                        onClick={handleShare}
+                      >
                         <Share2 className="h-5 w-5" />
                       </Button>
                     </div>
@@ -207,6 +241,19 @@ export default function EventPage() {
                     <Badge variant="secondary">{event.category}</Badge>
                     {event.mode && (
                       <Badge variant="secondary">{event.mode}</Badge>
+                    )}
+                    {event.status && (
+                      <Badge
+                        variant={
+                          event.status === "approved"
+                            ? "default"
+                            : event.status === "pending"
+                            ? "outline"
+                            : "destructive"
+                        }
+                      >
+                        {event.status}
+                      </Badge>
                     )}
                   </div>
 
@@ -239,24 +286,27 @@ export default function EventPage() {
               </div>
             </Card>
 
-            <Tabs defaultValue="details" className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="prizes">Prizes</TabsTrigger>
-                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                {/* Only show relevant tabs */}
               </TabsList>
-              <div className="mt-6">
+
+              <TabsContent value="details" className="mt-6">
                 <Card className="p-6">
                   <h2 className="text-xl font-semibold mb-4">
                     About the Event
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground whitespace-pre-line">
                     {event.description ||
                       "No description provided for this event."}
                   </p>
                 </Card>
-              </div>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -266,7 +316,12 @@ export default function EventPage() {
                 <div className="text-2xl font-bold">
                   {event.isPaid ? `₹ ${event.price}` : "Free"}
                 </div>
-                <Badge variant="default" className="uppercase">
+                <Badge
+                  variant={
+                    event.participantRegistration ? "default" : "secondary"
+                  }
+                  className="uppercase"
+                >
                   Registration{" "}
                   {event.participantRegistration ? "Open" : "Closed"}
                 </Badge>
@@ -275,10 +330,23 @@ export default function EventPage() {
               <Button
                 className="w-full mb-4"
                 size="lg"
-                disabled={!event.participantRegistration || !user}
+                disabled={
+                  !event.participantRegistration ||
+                  !user ||
+                  event.status !== "approved" ||
+                  isRegistered
+                }
                 onClick={() => setIsRegistrationOpen(true)}
               >
-                Register Now
+                {!user
+                  ? "Sign in to Register"
+                  : !event.participantRegistration
+                  ? "Registration Closed"
+                  : event.status !== "approved"
+                  ? "Event Pending Approval"
+                  : !isRegistered
+                  ? "Register Now"
+                  : "Registered"}
               </Button>
 
               <div className="space-y-4">
@@ -292,14 +360,52 @@ export default function EventPage() {
                     {event.mode || "Not specified"}
                   </span>
                 </div>
-                <div className="flex justify-between py-2">
+                <div className="flex justify-between py-2 border-b">
                   <span className="text-muted-foreground">Date</span>
                   <span className="font-medium">
                     {event.dateOfEvent || "Not specified"}
                   </span>
                 </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="font-medium capitalize">
+                    {event.status || "pending"}
+                  </span>
+                </div>
               </div>
             </Card>
+
+            {event.isPaid && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Payment Information
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    {event.qrImage ? (
+                      <img
+                        src={event.qrImage || "/placeholder.svg"}
+                        alt="Payment QR Code"
+                        className="max-w-[200px] h-auto border rounded-md"
+                      />
+                    ) : (
+                      <div className="bg-muted w-[200px] h-[200px] rounded-md flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">
+                          QR Code not available
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-center text-muted-foreground">
+                    Scan the QR code to make payment of ₹{event.price}
+                  </p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    After payment, you&apos;ll need to provide the transaction
+                    ID during registration
+                  </p>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -309,7 +415,8 @@ export default function EventPage() {
         eventId={event.id}
         eventName={event.name}
         isPaid={!!event.isPaid}
-        price={event.price}
+        price={event.price?.toString() || ""}
+        qrImage={event.qrImage || ""}
         isOpen={isRegistrationOpen}
         onOpenChange={setIsRegistrationOpen}
       />

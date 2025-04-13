@@ -176,6 +176,7 @@ type CreateEventInput = {
   dateOfEvent: string;
   logo?: string;
   bannerImage?: string;
+  qrImage?: string; // Added qrImage property
 };
 
 export async function createEvent(input: CreateEventInput, userId: string) {
@@ -189,11 +190,13 @@ export async function createEvent(input: CreateEventInput, userId: string) {
         mode: input.mode,
         participantRegistration: input.participantRegistration,
         isPaid: input.isPaid,
+
         price: input.isPaid ? input.price : "0",
+        qrImage: input.qrImage,
         website: input.website,
         dateOfEvent: input.dateOfEvent,
-        logo: "test",
-        bannerImage: "test",
+        logo: input.logo,
+        bannerImage: input.bannerImage,
         organizerId: userId,
       })
       .returning();
